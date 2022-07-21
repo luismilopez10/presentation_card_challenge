@@ -39,6 +39,8 @@ dependencies:
   image_picker: ^0.8.5+3 # Para usar la cámara y la galería
   shared_preferences: ^2.0.15 # Para guardar preferencias localmente
   material_design_icons_flutter: ^5.0.6996
+  firebase_core: ^1.20.0
+  cloud_firestore: ^3.4.0
 
 dev_dependencies:
   flutter_test:

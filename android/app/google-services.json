@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "1074590266377",
+    "project_id": "flutter-personal-card",
+    "storage_bucket": "flutter-personal-card.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1074590266377:android:90ac30c7b4d84d91bcb4d8",
+        "android_client_info": {
+          "package_name": "com.example.presentation_card_challenge"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1074590266377-731009g3m4677h0v13n80nokcp0b9v7l.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCTFtFgZw75mPkzL4rsC4TT2a4PfnIG5z8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1074590266377-731009g3m4677h0v13n80nokcp0b9v7l.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

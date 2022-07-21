@@ -26,7 +26,7 @@ class _PagProfileState extends State<PagProfile> {
           "Personal card",
         ),
       ),
-      body: SingleChildScrollView(
+      body: const SingleChildScrollView(
         child: WdgProfileForm(),
       ),
     );

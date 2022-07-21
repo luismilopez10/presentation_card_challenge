@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'package:presentation_card_challenge/services/srvSharedPreferences.dart';
 import 'package:presentation_card_challenge/services/srvFiles.dart';
@@ -18,14 +19,16 @@ class WdgProfileForm extends StatefulWidget {
 }
 
 class _WdgProfileFormState extends State<WdgProfileForm> {
+  CollectionReference users = FirebaseFirestore.instance.collection("users");
+
   late TextEditingController _nameController;
   late TextEditingController _professionController;
   late TextEditingController _documentController;
 
-  List<String> documentTypes = ['ID', 'Foreign ID'];
-  String? selectedDocumentType = 'ID';
+  final List<String> _documentTypes = ['ID', 'Foreign ID', 'Driver License'];
+  String? _selectedDocumentType = 'ID';
 
-  late String strPath;
+  late String _strPath;
 
   @override
   void initState() {
@@ -33,15 +36,15 @@ class _WdgProfileFormState extends State<WdgProfileForm> {
     _nameController = TextEditingController(text: "");
     _professionController = TextEditingController(text: "");
     _documentController = TextEditingController(text: "");
-    strPath = "";
+    _strPath = "";
   }
 
   bool validateAll() {
     if (formUserKey.currentState!.validate()) {
       return true;
     } else {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text("Please fill all the fields")));
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Please fill all the fields")));
       return false;
     }
   }
@@ -61,7 +64,7 @@ class _WdgProfileFormState extends State<WdgProfileForm> {
               height: 20.0,
             ),
             //-------------------------PROFILE PICTURE--------------------------
-            //------------------------------FOTO--------------------------------
+            //-----------------------------PICTURE------------------------------
             Stack(
               alignment: Alignment.bottomCenter,
               children: [
@@ -75,17 +78,22 @@ class _WdgProfileFormState extends State<WdgProfileForm> {
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(100.0),
                             border: Border.all(color: Colors.grey, width: 1.5),
-                            image: strPath != ""
+                            image: _strPath != ""
                                 ? DecorationImage(
-                                    image: FileImage(File(strPath)),
+                                    image: FileImage(File(_strPath)),
                                     fit: BoxFit.cover)
-                                : const DecorationImage(
-                                    image: AssetImage(
-                                        "assets/default-profile-picture.jpg"),
-                                    fit: BoxFit.cover)),
+                                : result.hasData
+                                    ? const DecorationImage(
+                                        image: AssetImage(
+                                            "assets/default-profile-picture.jpg"),
+                                        fit: BoxFit.cover)
+                                    : const DecorationImage(
+                                        image: AssetImage(
+                                            "assets/default-profile-picture.jpg"),
+                                        fit: BoxFit.cover)),
                       );
                     }),
-                //--------------------------CÁMARA--------------------------
+                //----------------------------CAMERA----------------------------
                 Container(
                   margin: const EdgeInsets.only(left: 180.0),
                   child: IconButton(
@@ -95,12 +103,12 @@ class _WdgProfileFormState extends State<WdgProfileForm> {
                       String? strImage =
                           await srvFiles.getImage(blnCamera: true);
                       setState(() {
-                        strPath = strImage!;
+                        _strPath = strImage!;
                       });
                     },
                   ),
                 ),
-                //-------------------------GALERÍA--------------------------
+                //---------------------------GALLERY----------------------------
                 Container(
                   margin: const EdgeInsets.only(right: 180.0),
                   child: IconButton(
@@ -109,7 +117,7 @@ class _WdgProfileFormState extends State<WdgProfileForm> {
                     onPressed: () async {
                       String? strImage = await srvFiles.getImage();
                       setState(() {
-                        strPath = strImage!;
+                        _strPath = strImage!;
                       });
                     },
                   ),
@@ -119,7 +127,7 @@ class _WdgProfileFormState extends State<WdgProfileForm> {
             const SizedBox(
               height: 40.0,
             ),
-            //-------------------------FULL NAME--------------------------
+            //----------------------------FULL NAME-----------------------------
             TextFormField(
               minLines: 1,
               maxLines: 2,
@@ -140,14 +148,14 @@ class _WdgProfileFormState extends State<WdgProfileForm> {
               controller: _nameController,
             ),
             const SizedBox(height: 12.0),
-            //---------------------PROFESSION OR ROLE---------------------
+            //------------------------PROFESSION OR ROLE------------------------
             TextFormField(
               minLines: 1,
               maxLines: 2,
               validator: (value) => validate(value!, "profession"),
               decoration: InputDecoration(
                 hintText: 'Ex. Development consultant',
-                labelText: 'Profession or role',
+                labelText: 'Profession or Role',
                 border: OutlineInputBorder(
                     borderSide:
                         BorderSide(color: Theme.of(context).primaryColor)),
@@ -157,19 +165,20 @@ class _WdgProfileFormState extends State<WdgProfileForm> {
               controller: _professionController,
             ),
             const SizedBox(height: 12.0),
-            //-----------------------DOCUMENT TYPE------------------------
+            //--------------------------DOCUMENT TYPE---------------------------
             SizedBox(
               child: DropdownButtonFormField(
                 validator: (value) =>
-                    validate(selectedDocumentType!, "identification-type"),
+                    validate(_selectedDocumentType!, "identification-type"),
                 decoration: InputDecoration(
                     labelText: 'Document Type',
                     enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(4),
-                        borderSide: BorderSide(width: 2, color: Colors.blue)),
-                    prefixIcon: Icon(Icons.account_box)),
-                value: selectedDocumentType,
-                items: documentTypes
+                        borderSide:
+                            const BorderSide(width: 1, color: Colors.grey)),
+                    prefixIcon: const Icon(Icons.account_box)),
+                value: _selectedDocumentType,
+                items: _documentTypes
                     .map((documentType) => DropdownMenuItem<String>(
                         value: documentType,
                         child: Text(
@@ -177,11 +186,11 @@ class _WdgProfileFormState extends State<WdgProfileForm> {
                         )))
                     .toList(),
                 onChanged: (documentType) => setState(
-                    () => selectedDocumentType = documentType as String?),
+                    () => _selectedDocumentType = documentType as String?),
               ),
             ),
             const SizedBox(height: 12.0),
-            //--------------------------DOCUMENT--------------------------
+            //-----------------------------DOCUMENT-----------------------------
             TextFormField(
               keyboardType: TextInputType.number,
               maxLength: 10,
@@ -196,36 +205,32 @@ class _WdgProfileFormState extends State<WdgProfileForm> {
                     borderSide:
                         BorderSide(color: Theme.of(context).primaryColor)),
                 prefixIcon: const Icon(Icons.badge_rounded),
-                // prefixIcon: const Icon(Icons.account_box),
               ),
               onChanged: (value) => () {},
               controller: _documentController,
             ),
-            const SizedBox(height: 12.0),
+            const SizedBox(height: 30.0),
             //-----------------------------BUTTONS------------------------------
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 //-----------------------BUTTON "ERASE"-------------------------
                 ElevatedButton(
+                  style:
+                      ElevatedButton.styleFrom(fixedSize: const Size(155, 45)),
                   onPressed: () {
-                    _nameController.clear();
-                    _professionController.clear();
-                    _documentController.clear();
+                    clearFormFields();
                   },
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: const [
-                      SizedBox(
-                        height: 55,
-                      ),
                       Icon(
                         Icons.backspace,
-                        size: 25,
+                        size: 18,
                         color: Colors.white,
                       ),
                       Text(
-                        '  Erase',
+                        '  Clear',
                         style: TextStyle(
                             fontSize: 17,
                             fontWeight: FontWeight.bold,
@@ -237,36 +242,47 @@ class _WdgProfileFormState extends State<WdgProfileForm> {
                 ),
                 //-----------------------BUTTON "SAVE"--------------------------
                 ElevatedButton(
-                  onPressed: () {
-                    File file = File(strPath);
+                  style:
+                      ElevatedButton.styleFrom(fixedSize: const Size(155, 45)),
+                  onPressed: () async {
+                    File file = File(_strPath);
                     String imgConvert = base64Encode(file.readAsBytesSync());
 
+                    srvSharedPreferences.writeString(
+                        key: 'image', value: imgConvert);
                     srvSharedPreferences.writeString(
                         key: 'name', value: _nameController.text);
                     srvSharedPreferences.writeString(
                         key: 'profession', value: _professionController.text);
-                    // srvSharedPreferences.writeString(
-                    //     key: 'identification-type',
-                    //     value: _documentTypeController.text);
+                    srvSharedPreferences.writeString(
+                        key: 'identification-type',
+                        value: _selectedDocumentType!);
                     srvSharedPreferences.writeString(
                         key: 'identification', value: _documentController.text);
-                    srvSharedPreferences.writeString(
-                        key: 'image', value: imgConvert);
 
                     if (validateAll()) {
-                      print("Information saved");
-                      //TODO: Change user values
+                      await users
+                          .add({
+                            'picture_url': _strPath,
+                            'full_name': _nameController.text,
+                            'profession': _professionController.text,
+                            'document_type': _selectedDocumentType,
+                            'document': _documentController.text
+                          })
+                          .then((value) => {
+                                clearFormFields(),
+                                print("User Information Saved")
+                              })
+                          .catchError(
+                              (error) => print("Failed to add user $error"));
                     }
                   },
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: const [
-                      SizedBox(
-                        height: 55,
-                      ),
                       Icon(
                         Icons.save,
-                        size: 35,
+                        size: 23,
                         color: Colors.white,
                       ),
                       Text(
@@ -294,5 +310,12 @@ class _WdgProfileFormState extends State<WdgProfileForm> {
     _professionController.dispose();
     _documentController.dispose();
     super.dispose();
+  }
+
+  void clearFormFields() {
+    _strPath = "";
+    _nameController.clear();
+    _professionController.clear();
+    _documentController.clear();
   }
 }
