@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:get/get.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -21,12 +22,18 @@ class WdgProfileForm extends StatefulWidget {
 class _WdgProfileFormState extends State<WdgProfileForm> {
   CollectionReference users = FirebaseFirestore.instance.collection("users");
 
+  final dropdownState = GlobalKey<FormFieldState>();
+
   late TextEditingController _nameController;
   late TextEditingController _professionController;
   late TextEditingController _documentController;
 
-  final List<String> _documentTypes = ['ID', 'Foreign ID', 'Driver License'];
-  String? _selectedDocumentType = 'ID';
+  final List<String> _documentTypes = [
+    'Driver License',
+    'Passport',
+    'Social Security'
+  ];
+  String? _selectedDocumentType;
 
   late String _strPath;
 
@@ -43,8 +50,11 @@ class _WdgProfileFormState extends State<WdgProfileForm> {
     if (formUserKey.currentState!.validate()) {
       return true;
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Please fill all the fields")));
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text("Please fill all the fields"),
+        duration: Duration(seconds: 2),
+      ));
       return false;
     }
   }
@@ -69,36 +79,37 @@ class _WdgProfileFormState extends State<WdgProfileForm> {
               alignment: Alignment.bottomCenter,
               children: [
                 FutureBuilder(
-                    future: srvSharedPreferences.readString(key: 'image'),
-                    builder: (context, result) {
-                      return Container(
-                        height: 150.0,
-                        width: 150.0,
-                        decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(100.0),
-                            border: Border.all(color: Colors.grey, width: 1.5),
-                            image: _strPath != ""
-                                ? DecorationImage(
-                                    image: FileImage(File(_strPath)),
-                                    fit: BoxFit.cover)
-                                : result.hasData
-                                    ? const DecorationImage(
-                                        image: AssetImage(
-                                            "assets/default-profile-picture.jpg"),
-                                        fit: BoxFit.cover)
-                                    : const DecorationImage(
-                                        image: AssetImage(
-                                            "assets/default-profile-picture.jpg"),
-                                        fit: BoxFit.cover)),
-                      );
-                    }),
+                  future: srvSharedPreferences.readString(key: 'image'),
+                  builder: (context, result) {
+                    return Container(
+                      height: 150.0,
+                      width: 150.0,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(100.0),
+                        border: Border.all(color: Colors.grey, width: 1.5),
+                        image: _strPath != ""
+                          ? DecorationImage(
+                              image: FileImage(File(_strPath)),
+                              fit: BoxFit.cover)
+                          : result.hasData
+                          ? const DecorationImage(
+                              image: AssetImage("assets/default-profile-picture.jpg"),
+                              fit: BoxFit.cover)
+                          : const DecorationImage(
+                              image: AssetImage("assets/default-profile-picture.jpg"),
+                              fit: BoxFit.cover)
+                      ),
+                    );
+                  }
+                ),
                 //----------------------------CAMERA----------------------------
                 Container(
                   margin: const EdgeInsets.only(left: 180.0),
                   child: IconButton(
+                    color: Theme.of(context).primaryColorDark,
                     icon: const Icon(MdiIcons.cameraPlus),
-                    iconSize: 35,
+                    iconSize: 30,
                     onPressed: () async {
                       String? strImage =
                           await srvFiles.getImage(blnCamera: true);
@@ -112,8 +123,9 @@ class _WdgProfileFormState extends State<WdgProfileForm> {
                 Container(
                   margin: const EdgeInsets.only(right: 180.0),
                   child: IconButton(
+                    color: Theme.of(context).primaryColorDark,
                     icon: const Icon(MdiIcons.imagePlus),
-                    iconSize: 35,
+                    iconSize: 30,
                     onPressed: () async {
                       String? strImage = await srvFiles.getImage();
                       setState(() {
@@ -142,7 +154,7 @@ class _WdgProfileFormState extends State<WdgProfileForm> {
                 border: OutlineInputBorder(
                     borderSide:
                         BorderSide(color: Theme.of(context).primaryColor)),
-                prefixIcon: Icon(Icons.person),
+                prefixIcon: const Icon(Icons.person),
               ),
               onChanged: (value) => () {},
               controller: _nameController,
@@ -159,7 +171,7 @@ class _WdgProfileFormState extends State<WdgProfileForm> {
                 border: OutlineInputBorder(
                     borderSide:
                         BorderSide(color: Theme.of(context).primaryColor)),
-                prefixIcon: Icon(Icons.cases_sharp),
+                prefixIcon: const Icon(Icons.cases_sharp),
               ),
               onChanged: (value) => () {},
               controller: _professionController,
@@ -168,16 +180,12 @@ class _WdgProfileFormState extends State<WdgProfileForm> {
             //--------------------------DOCUMENT TYPE---------------------------
             SizedBox(
               child: DropdownButtonFormField(
-                validator: (value) =>
-                    validate(_selectedDocumentType!, "identification-type"),
-                decoration: InputDecoration(
-                    labelText: 'Document Type',
-                    enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(4),
-                        borderSide:
-                            const BorderSide(width: 1, color: Colors.grey)),
-                    prefixIcon: const Icon(Icons.account_box)),
+                key: dropdownState,
+                hint: const Text("Select a document type"),
                 value: _selectedDocumentType,
+                validator: (value) => _selectedDocumentType != null
+                    ? validate(_selectedDocumentType!, "document-type")
+                    : validate("", "document-type"),
                 items: _documentTypes
                     .map((documentType) => DropdownMenuItem<String>(
                         value: documentType,
@@ -185,6 +193,13 @@ class _WdgProfileFormState extends State<WdgProfileForm> {
                           documentType,
                         )))
                     .toList(),
+                decoration: InputDecoration(
+                    // labelText: 'Document Type',
+                    enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(4),
+                        borderSide:
+                            const BorderSide(width: 1, color: Colors.grey)),
+                    prefixIcon: const Icon(Icons.account_box)),
                 onChanged: (documentType) => setState(
                     () => _selectedDocumentType = documentType as String?),
               ),
@@ -195,7 +210,7 @@ class _WdgProfileFormState extends State<WdgProfileForm> {
               keyboardType: TextInputType.number,
               maxLength: 10,
               inputFormatters: [
-                FilteringTextInputFormatter.allow(RegExp("[0-9]"))
+                FilteringTextInputFormatter.allow(RegExp("[0-9 A-Z]"))
               ],
               validator: (value) => validate(value!, "identification"),
               decoration: InputDecoration(
@@ -244,38 +259,8 @@ class _WdgProfileFormState extends State<WdgProfileForm> {
                 ElevatedButton(
                   style:
                       ElevatedButton.styleFrom(fixedSize: const Size(155, 45)),
-                  onPressed: () async {
-                    File file = File(_strPath);
-                    String imgConvert = base64Encode(file.readAsBytesSync());
-
-                    srvSharedPreferences.writeString(
-                        key: 'image', value: imgConvert);
-                    srvSharedPreferences.writeString(
-                        key: 'name', value: _nameController.text);
-                    srvSharedPreferences.writeString(
-                        key: 'profession', value: _professionController.text);
-                    srvSharedPreferences.writeString(
-                        key: 'identification-type',
-                        value: _selectedDocumentType!);
-                    srvSharedPreferences.writeString(
-                        key: 'identification', value: _documentController.text);
-
-                    if (validateAll()) {
-                      await users
-                          .add({
-                            'picture_url': _strPath,
-                            'full_name': _nameController.text,
-                            'profession': _professionController.text,
-                            'document_type': _selectedDocumentType,
-                            'document': _documentController.text
-                          })
-                          .then((value) => {
-                                clearFormFields(),
-                                print("User Information Saved")
-                              })
-                          .catchError(
-                              (error) => print("Failed to add user $error"));
-                    }
+                  onPressed: () {
+                    onSaveButton();
                   },
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -313,9 +298,48 @@ class _WdgProfileFormState extends State<WdgProfileForm> {
   }
 
   void clearFormFields() {
-    _strPath = "";
+    setState(() {
+      _strPath = "";
+    });
+    dropdownState.currentState?.didChange(null);
     _nameController.clear();
     _professionController.clear();
     _documentController.clear();
+  }
+
+  void onSaveButton() async {
+    File file = File(_strPath);
+    String imgConvert = base64Encode(file.readAsBytesSync());
+
+    srvSharedPreferences.writeString(key: 'image', value: imgConvert);
+    srvSharedPreferences.writeString(key: 'name', value: _nameController.text);
+    srvSharedPreferences.writeString(
+        key: 'profession', value: _professionController.text);
+    if (_selectedDocumentType != null) {
+      srvSharedPreferences.writeString(
+          key: 'document-type', value: _selectedDocumentType!);
+    }
+    srvSharedPreferences.writeString(
+        key: 'identification', value: _documentController.text);
+
+    if (validateAll()) {
+      await users
+          .add({
+            'picture_url': _strPath,
+            'full_name': _nameController.text,
+            'profession': _professionController.text,
+            'document_type': _selectedDocumentType,
+            'document': _documentController.text
+          })
+          .then((value) => {
+                clearFormFields(),
+                Get.snackbar("Done!", "User information saved."),
+                print("User Information Saved")
+              })
+          .catchError((error) => {
+                Get.snackbar("Error!", "Failed to add user. $error."),
+                print("Failed to add user: $error")
+              });
+    }
   }
 }
